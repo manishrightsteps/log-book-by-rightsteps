@@ -1,0 +1,53 @@
+{
+  "branding": {
+    "name": "Logbook by Rightsteps",
+    "logo": "/logo.png",
+    "primaryColor": "#059669",
+    "secondaryColor": "#047857",
+    "textColor": "#1f2937",
+    "backgroundColor": "#ffffff",
+    "accentColor": "#10b981"
+  },
+  "layout": {
+    "maxWidth": "1400px",
+    "padding": "2rem",
+    "borderRadius": "16px",
+    "shadow": "xl",
+    "sidebarWidth": "320px",
+    "contentSpacing": "2rem"
+  },
+  "typography": {
+    "headingFont": "Inter",
+    "bodyFont": "Inter", 
+    "codeFont": "JetBrains Mono",
+    "fontSize": {
+      "base": "14px",
+      "heading": "24px",
+      "subheading": "18px"
+    }
+  },
+  "features": {
+    "showScreenshots": true,
+    "showLinks": true,
+    "enableAnimations": true,
+    "darkMode": true,
+    "searchEnabled": true,
+    "timelineView": true,
+    "versionFiltering": true,
+    "stickyNavigation": true,
+    "responsiveGrid": true
+  },
+  "theme": {
+    "gradientBackground": "from-green-50 via-emerald-50 to-green-100",
+    "cardBackground": "white",
+    "borderColor": "#e5e7eb",
+    "hoverEffects": true,
+    "glassmorphism": true
+  },
+  "metadata": {
+    "title": "Logbook by Rightsteps - Product Updates",
+    "description": "Discover the latest features, improvements, and updates to enhance your experience",
+    "url": "https://yoursite.com/changelog",
+    "keywords": ["changelog", "updates", "features", "product", "releases"]
+  }
+}
