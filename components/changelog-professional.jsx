@@ -25,6 +25,122 @@ import {
 } from 'lucide-react';
 import { parseChangelogContent } from '@/lib/changelog-parser';
 
+// Utility function to render markdown content - SSR safe
+const renderMarkdownContent = (text) => {
+  if (!text) return text;
+  
+  // Parse text for formatting without dangerouslySetInnerHTML
+  const parts = [];
+  let currentIndex = 0;
+  
+  // Handle bold text **text**
+  const boldRegex = /\*\*(.*?)\*\*/g;
+  let match;
+  
+  while ((match = boldRegex.exec(text)) !== null) {
+    // Add text before the bold
+    if (match.index > currentIndex) {
+      parts.push(text.slice(currentIndex, match.index));
+    }
+    // Add the bold text
+    parts.push(<strong key={match.index}>{match[1]}</strong>);
+    currentIndex = match.index + match[0].length;
+  }
+  
+  // Add remaining text
+  if (currentIndex < text.length) {
+    parts.push(text.slice(currentIndex));
+  }
+  
+  return parts.length > 1 ? <>{parts}</> : text;
+};
+
+// Function to group items into tables and regular items - SSR safe
+const groupSectionItems = (items) => {
+  const groupedItems = [];
+  let currentTableRows = [];
+  
+  items.forEach((item, itemIndex) => {
+    if (item.startsWith('|') && item.includes('|')) {
+      currentTableRows.push(item);
+    } else {
+      // If we have accumulated table rows, add them as a table
+      if (currentTableRows.length > 0) {
+        groupedItems.push({
+          type: 'table',
+          content: currentTableRows,
+          key: `table-${groupedItems.length}`
+        });
+        currentTableRows = [];
+      }
+      // Add regular item
+      groupedItems.push({
+        type: 'item',
+        content: item,
+        key: `item-${itemIndex}`
+      });
+    }
+  });
+  
+  // Add any remaining table rows
+  if (currentTableRows.length > 0) {
+    groupedItems.push({
+      type: 'table',
+      content: currentTableRows,
+      key: `table-${groupedItems.length}`
+    });
+  }
+  
+  return groupedItems;
+};
+
+// Function to render a complete table from table rows
+const renderTable = (tableRows) => {
+  if (!tableRows || tableRows.length === 0) return null;
+  
+  const rows = tableRows.map(row => 
+    row.split('|').filter(cell => cell.trim()).map(cell => cell.trim())
+  );
+  
+  if (rows.length === 0) return null;
+  
+  const headers = rows[0];
+  const dataRows = rows.slice(1);
+  
+  return (
+    <div className="my-6 overflow-x-auto">
+      <table className="min-w-full bg-white border border-zinc-200 rounded-lg shadow-sm">
+        <thead className="bg-zinc-50">
+          <tr>
+            {headers.map((header, index) => (
+              <th 
+                key={index} 
+                className="px-4 py-3 text-left text-sm font-medium text-zinc-700 border-b border-zinc-200 first:rounded-tl-lg last:rounded-tr-lg"
+              >
+                {renderMarkdownContent(header)}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-zinc-200">
+          {dataRows.map((row, rowIndex) => (
+            <tr key={rowIndex} className="hover:bg-zinc-50 transition-colors">
+              {row.map((cell, cellIndex) => (
+                <td 
+                  key={cellIndex} 
+                  className="px-4 py-3 text-sm text-zinc-700 border-r border-zinc-200 last:border-r-0"
+                >
+                  {renderMarkdownContent(cell)}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
 const iconMap = {
   'Security & Login': Shield,
   'Email & Verification': Mail,
@@ -63,6 +179,11 @@ export default function ChangelogProfessional({ config, changelogs }) {
   const [parsedChangelogs, setParsedChangelogs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [expandedSections, setExpandedSections] = useState({});
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (changelogs && changelogs.length > 0) {
@@ -108,7 +229,7 @@ export default function ChangelogProfessional({ config, changelogs }) {
     }));
   };
 
-  if (isLoading) {
+  if (isLoading || !mounted) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="flex flex-col items-center">
@@ -287,12 +408,22 @@ export default function ChangelogProfessional({ config, changelogs }) {
                           >
                             <div className="px-4 pb-4 border-t border-zinc-200">
                               <ul className="space-y-2 mt-3">
-                                {section.items.map((item, itemIndex) => (
-                                  <li key={itemIndex} className="flex items-start text-sm text-zinc-700 leading-relaxed">
-                                    <span className="inline-block w-1.5 h-1.5 bg-zinc-400 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                                    <span>{item}</span>
-                                  </li>
-                                ))}
+{groupSectionItems(section.items).map((group) => {
+                                  if (group.type === 'table') {
+                                    return (
+                                      <li key={group.key} className="list-none">
+                                        {renderTable(group.content)}
+                                      </li>
+                                    );
+                                  } else {
+                                    return (
+                                      <li key={group.key} className="flex items-start text-sm text-zinc-700 leading-relaxed">
+                                        <span className="inline-block w-1.5 h-1.5 bg-zinc-400 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                                        <span>{renderMarkdownContent(group.content)}</span>
+                                      </li>
+                                    );
+                                  }
+                                })}
                               </ul>
                             </div>
                           </motion.div>
